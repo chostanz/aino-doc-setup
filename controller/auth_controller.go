@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/badoux/checkmail"
@@ -39,6 +40,7 @@ func RegisterUser(c echo.Context) error {
 	var userRegister models.Register
 
 	if errBind := c.Bind(&userRegister); errBind != nil {
+		log.Print(errBind)
 		return c.JSON(http.StatusBadRequest, &models.Response{
 			Code:    400,
 			Message: "Data tidak valid!",
@@ -78,6 +80,24 @@ func RegisterUser(c echo.Context) error {
 					})
 				}
 			}
+		}
+		re := regexp.MustCompile(`^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$`)
+		if !re.MatchString(userRegister.PersonalPhone) {
+			log.Println("Nomor telepon tidak valid:", userRegister.PersonalPhone)
+			return c.JSON(http.StatusBadRequest, &models.Response{
+				Code:    400,
+				Message: "Nomor telepon tidak valid",
+				Status:  false,
+			})
+		}
+
+		if len(userRegister.PersonalPhone) < 12 {
+			log.Println("Nomor telepon kurang:", userRegister.PersonalPhone)
+			return c.JSON(http.StatusBadRequest, &models.Response{
+				Code:    400,
+				Message: "Nomor telepon kurang dari 12 digit",
+				Status:  false,
+			})
 		}
 		log.Print(registerErr)
 		return c.JSON(http.StatusCreated, &models.Response{

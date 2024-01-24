@@ -16,7 +16,7 @@ func Route() *echo.Echo {
 	r.POST("/role/add", controller.AddRole)
 
 	r.GET("user/application/role", controller.GetUserAppRole)
-
+	r.PUT("/user/update/:user_application_role_uuid", controller.UpdateUserAppRole)
 	r.GET("/user/:id", controller.ShowAppRoleById)
 	r.GET("/user/all", controller.GetUserAppRole)
 	r.POST("/login", controller.Login)

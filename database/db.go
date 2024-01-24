@@ -10,7 +10,7 @@ import (
 var DB = Connection()
 
 func Connection() *sqlx.DB {
-	db, err := sqlx.Connect("postgres", "user=postgres password=00000 dbname=db_test sslmode=disable")
+	db, err := sqlx.Connect("postgres", "user=postgres password=00000 dbname=db_aino_doc sslmode=disable")
 
 	if err != nil {
 		log.Fatal(err)

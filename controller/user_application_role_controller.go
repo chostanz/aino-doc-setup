@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/badoux/checkmail"
@@ -67,53 +68,53 @@ func ShowAppRoleById(c echo.Context) error {
 
 func UpdateUserAppRole(c echo.Context) error {
 
-	tokenString := c.Request().Header.Get("Authorization")
-	secretKey := "secretJwToken"
+	// tokenString := c.Request().Header.Get("Authorization")
+	// secretKey := "secretJwToken"
 
-	if tokenString == "" {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"code":    401,
-			"message": "Token tidak ditemukan!",
-			"status":  false,
-		})
-	}
+	// if tokenString == "" {
+	// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+	// 		"code":    401,
+	// 		"message": "Token tidak ditemukan!",
+	// 		"status":  false,
+	// 	})
+	// }
 
-	if !strings.HasPrefix(tokenString, "Bearer ") {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"code":    401,
-			"message": "Token tidak valid!",
-			"status":  false,
-		})
-	}
+	// if !strings.HasPrefix(tokenString, "Bearer ") {
+	// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+	// 		"code":    401,
+	// 		"message": "Token tidak valid!",
+	// 		"status":  false,
+	// 	})
+	// }
 
-	tokenOnly := strings.TrimPrefix(tokenString, "Bearer ")
+	// tokenOnly := strings.TrimPrefix(tokenString, "Bearer ")
 
-	// Mendekripsi token JWE
-	decrypted, errDec := DecryptJWE(tokenOnly, secretKey)
-	if errDec != nil {
-		fmt.Println("Gagal mendekripsi token:", errDec)
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"code":    401,
-			"message": "Token tidak valid!",
-			"status":  false,
-		})
-	}
+	// // Mendekripsi token JWE
+	// decrypted, errDec := DecryptJWE(tokenOnly, secretKey)
+	// if errDec != nil {
+	// 	fmt.Println("Gagal mendekripsi token:", errDec)
+	// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+	// 		"code":    401,
+	// 		"message": "Token tidak valid!",
+	// 		"status":  false,
+	// 	})
+	// }
 
-	var claims JwtCustomClaims
-	errJ := json.Unmarshal([]byte(decrypted), &claims)
-	if errJ != nil {
-		fmt.Println("Gagal mengurai klaim:", errJ)
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"code":    401,
-			"message": "Token tidak valid!",
-			"status":  false,
-		})
-	}
-	//userUUID := c.Get("user_uuid").(string)
-	_, errK := service.GetUserInfoFromToken(tokenOnly)
-	if errK != nil {
-		return c.JSON(http.StatusUnauthorized, "Invalid token atau token tidak ditemukan!")
-	}
+	// var claims JwtCustomClaims
+	// errJ := json.Unmarshal([]byte(decrypted), &claims)
+	// if errJ != nil {
+	// 	fmt.Println("Gagal mengurai klaim:", errJ)
+	// 	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+	// 		"code":    401,
+	// 		"message": "Token tidak valid!",
+	// 		"status":  false,
+	// 	})
+	// }
+	// //userUUID := c.Get("user_uuid").(string)
+	// _, errK := service.GetUserInfoFromToken(tokenOnly)
+	// if errK != nil {
+	// 	return c.JSON(http.StatusUnauthorized, "Invalid token atau token tidak ditemukan!")
+	// }
 
 	var updateUserAppRole models.UpdateUser
 
@@ -179,6 +180,24 @@ func UpdateUserAppRole(c echo.Context) error {
 			}
 		}
 
+		re := regexp.MustCompile(`^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$`)
+		if !re.MatchString(updateUserAppRole.PersonalPhone) {
+			log.Println("Nomor telepon tidak valid:", updateUserAppRole.PersonalPhone)
+			return c.JSON(http.StatusBadRequest, &models.Response{
+				Code:    400,
+				Message: "Nomor telepon tidak valid",
+				Status:  false,
+			})
+		}
+
+		if len(updateUserAppRole.PersonalPhone) < 12 {
+			log.Println("Nomor telepon kurang:", updateUserAppRole.PersonalPhone)
+			return c.JSON(http.StatusBadRequest, &models.Response{
+				Code:    400,
+				Message: "Nomor telepon kurang dari 12 digit",
+				Status:  false,
+			})
+		}
 		_, addroleErr := service.UpdateUserAppRole(updateUserAppRole, userApplicationRoleUUID)
 		if addroleErr != nil {
 			log.Printf("Error updating user application role: %v", addroleErr)
